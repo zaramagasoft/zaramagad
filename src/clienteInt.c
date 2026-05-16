@@ -14,107 +14,94 @@ void *listen_metrics(void *arg)
 {
     int fd = *(int *)arg;
     char buffer[256];
-    printf("[Cliente] Escuchando métricas...\n");
+    printf("[Cliente] Hilo de métricas iniciado...\n");
     while (1)
     {
         int bytes = read(fd, buffer, sizeof(buffer) - 1);
         if (bytes > 0)
         {
             buffer[bytes] = '\0';
-            printf("\r\033[K[MÉTRICAS] %s", buffer); // Sobreescribe la línea para que no llene la pantalla
+            // Imprime las métricas de forma limpia
+            printf("\r\033[K[MÉTRICAS] %s", buffer); 
             fflush(stdout);
         }
-        else
-            break;
+        else {
+            break; // Si el socket se cierra, salimos del hilo
+        }
     }
     return NULL;
 }
 
-int connect_socket(const char *path)
-{
+int connect_socket(const char *path) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
-    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-    {
+    
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         perror("Error de conexión");
         return -1;
     }
     return fd;
 }
-int ejecuta()
+
+// Envía un comando único y espera su respuesta sin bloquear el futuro de la UI
+int ejecuta(const char *command)
 {
-    printf("--- Test de Cliente ZaramagaOS ---\n");
+    printf("--- Conectando a zaramagad ---\n");
 
-    // 1. Conectar a ambos canales
+    // 1. Conectar a ambos canales (Obligatorio para el protocolo del servidor)
     int fd_ctrl = connect_socket(SOCKET_CONTROL);
+    usleep(100000);
     int fd_metr = connect_socket(SOCKET_METRICS);
-
-    if (fd_ctrl == -1 || fd_metr == -1)
-        exit(1);
-
-    // 2. Lanzar hilo para ver las métricas sin bloquear el menú
-    pthread_t th;
-    pthread_create(&th, NULL, listen_metrics, &fd_metr);
-
-    // 3. Simular interacción del usuario
-    char cmd[256];
-    printf("[Cliente] Escribe comandos (ej: START_METRICS, uname -a, uptime, STOP_METRICS)\n");
-
-    while (1)
-    {
-        printf("\n> ");
-        fgets(cmd, sizeof(cmd), stdin);
-        write(fd_ctrl, cmd, strlen(cmd));
-
-        // Leer respuesta del comando (Control)
-        char res[1024];
-        int b = read(fd_ctrl, res, sizeof(res) - 1);
-        if (b > 0)
-        {
-            res[b] = '\0';
-            printf("[Respuesta Server]: %s\n", res);
-        }
+    usleep(100000);
+    if (fd_ctrl == -1 || fd_metr == -1) {
+        fprintf(stderr, "Error: El servidor zaramagad no está corriendo.\n");
+        return -1;
     }
 
-    return 0;
-}
-int main()
-{
-    /* printf("--- Test de Cliente ZaramagaOS ---\n");
-
-    // 1. Conectar a ambos canales
-    int fd_ctrl = connect_socket(SOCKET_CONTROL);
-    int fd_metr = connect_socket(SOCKET_METRICS);
-
-    if (fd_ctrl == -1 || fd_metr == -1)
-        exit(1);
-
-    // 2. Lanzar hilo para ver las métricas sin bloquear el menú
+    // 2. Lanzar hilo para ver las métricas en segundo plano
     pthread_t th;
     pthread_create(&th, NULL, listen_metrics, &fd_metr);
+    pthread_detach(th); // Lo desligamos para que limpie sus recursos solo al morir
 
-    // 3. Simular interacción del usuario
-    char cmd[256];
-    printf("[Cliente] Escribe comandos (ej: START_METRICS, uname -a, uptime, STOP_METRICS)\n");
+    // 3. Enviar el comando que hemos recibido por parámetro
+    printf("[Cliente] Mandando comando: %s\n", command);
+    if (write(fd_ctrl, command, strlen(command)) <= 0) {
+        perror("Error al escribir en socket");
+        close(fd_ctrl);
+        close(fd_metr);
+        return -1;
+    }
 
-    while (1)
-    {
-        printf("\n> ");
-        fgets(cmd, sizeof(cmd), stdin);
-        write(fd_ctrl, cmd, strlen(cmd));
+    // 4. Leer la respuesta única del servidor
+    char res[1024];
+    int b = read(fd_ctrl, res, sizeof(res) - 1);
+    if (b > 0) {
+        res[b] = '\0';
+        printf("\n[Respuesta Server]:\n%s\n", res);
+    } else {
+        printf("[Cliente] No se recibió respuesta del comando.\n");
+    }
 
-        // Leer respuesta del comando (Control)
-        char res[1024];
-        int b = read(fd_ctrl, res, sizeof(res) - 1);
-        if (b > 0)
-        {
-            res[b] = '\0';
-            printf("[Respuesta Server]: %s\n", res);
-        }
-    } */
+    // Dejamos un margen pequeño para ver si llega el JSON de métricas si fuera "START_METRICS"
+    sleep(1); 
 
-    return ejecuta();
+    // 5. Limpieza al terminar la acción
+    close(fd_ctrl);
+    close(fd_metr);
+    return 0;
+}
+
+int main()
+{
+    char command[256];
+    
+    // Prueba 1: Pedir información del sistema
+    strcpy(command, "uname -a\n");
+    ejecuta(command);
+    
+    printf("\n--- Fin de la ejecución de prueba ---\n");
+    return 0;
 }
