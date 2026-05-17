@@ -9,7 +9,7 @@
 #define SOCKET_METRICS "/tmp/z_metrics.sock"
 #define SOCKET_CONTROL "/tmp/z_control.sock"
 
-// Hilo para escuchar métricas en segundo plano
+/* // Hilo para escuchar métricas en segundo plano
 void *listen_metrics(void *arg)
 {
     int fd = *(int *)arg;
@@ -31,7 +31,7 @@ void *listen_metrics(void *arg)
     }
     return NULL;
 }
-
+ */
 int connect_socket(const char *path) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un addr;
@@ -61,17 +61,14 @@ int ejecuta(const char *command)
         return -1;
     }
 
-    // 2. Lanzar hilo para ver las métricas en segundo plano
-    pthread_t th;
-    pthread_create(&th, NULL, listen_metrics, &fd_metr);
-    pthread_detach(th); // Lo desligamos para que limpie sus recursos solo al morir
-
+    
+    
     // 3. Enviar el comando que hemos recibido por parámetro
     printf("[Cliente] Mandando comando: %s\n", command);
     if (write(fd_ctrl, command, strlen(command)) <= 0) {
         perror("Error al escribir en socket");
         close(fd_ctrl);
-        close(fd_metr);
+       
         return -1;
     }
 
@@ -90,7 +87,7 @@ int ejecuta(const char *command)
 
     // 5. Limpieza al terminar la acción
     close(fd_ctrl);
-    close(fd_metr);
+    
     return 0;
 }
 
