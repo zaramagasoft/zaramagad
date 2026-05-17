@@ -9,6 +9,7 @@
 #define SOCKET_METRICS "/tmp/z_metrics.sock"
 #define SOCKET_CONTROL "/tmp/z_control.sock"
 
+int comprobrarEntegra(const char *str);
 /* // Hilo para escuchar métricas en segundo plano
 void *listen_metrics(void *arg)
 {
@@ -46,6 +47,8 @@ int connect_socket(const char *path) {
     return fd;
 }
 
+
+
 // Envía un comando único y espera su respuesta sin bloquear el futuro de la UI
 int ejecuta(const char *command)
 {
@@ -81,7 +84,7 @@ int ejecuta(const char *command)
     } else {
         printf("[Cliente] No se recibió respuesta del comando.\n");
     }
-
+    comprobrarEntegra(res);
     // Dejamos un margen pequeño para ver si llega el JSON de métricas si fuera "START_METRICS"
     sleep(1); 
 
@@ -90,15 +93,23 @@ int ejecuta(const char *command)
     
     return 0;
 }
-
+int (*ptrfunc)(const char *command);
+int comprobrarEntegra(const char *resp) {
+    while (resp==NULL) {
+        usleep(10);
+    }
+    return 0;
+}
 int main()
 {
+    ptrfunc=ejecuta;
     char command[256];
-    
+
     // Prueba 1: Pedir información del sistema
     strcpy(command, "uname -a\n");
-    ejecuta(command);
-    
-    printf("\n--- Fin de la ejecución de prueba ---\n");
+    //ejecuta(command);
+    ptrfunc(command);
+
+
     return 0;
 }
