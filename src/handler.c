@@ -110,5 +110,10 @@ void* start_client_handler(void* arg) {
     close(c->fd_control);
     close(c->fd_metrics);
     free(c);
+    pthread_mutex_lock(&clientes_mtx);
+    clientes_activos--;
+    pthread_mutex_unlock(&clientes_mtx);
+
+    printf("[Handler] Clientes activos ahora: %d\n", clientes_activos);
     return NULL;
 }

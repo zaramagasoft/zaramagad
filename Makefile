@@ -5,7 +5,7 @@ BINDIR = bin
 
 # Archivos del SERVIDOR (zaramagad)
 # NOTA: No incluimos cliente.c aquí
-SRCS_SERV = src/main.c src/network.c src/handler.c src/metrics.c src/commands.c
+SRCS_SERV = src/main.c src/network.c src/handler.c src/metrics.c src/commands.c src/common.c
 OBJS_SERV = $(SRCS_SERV:.c=.o)
 TARGET_SERV = $(BINDIR)/zaramagad
 

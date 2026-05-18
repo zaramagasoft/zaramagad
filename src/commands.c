@@ -8,7 +8,7 @@ void execute_system_command(const char* cmd, char* response) {
     FILE *fp;
     char path[1024];
     char final_res[2048] = ""; // Buffer para acumular la salida
-
+    printf("[server]comando solicitado %s, \n",cmd);
     // Abrimos el proceso para lectura usando popen
     // "2>&1" redirige errores a la salida estándar para verlos en el cliente
     char full_cmd[300];
@@ -35,5 +35,6 @@ void execute_system_command(const char* cmd, char* response) {
         // Limpiamos posibles saltos de línea finales que afeen el JSON/Terminal
         strncpy(response, final_res, 511);
         response[511] = '\0';
+        printf("[server]Respuesta al comando %s\n",response);
     }
 }

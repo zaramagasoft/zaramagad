@@ -10,6 +10,9 @@
 #define SOCKET_METRICS "/tmp/z_metrics.sock"
 #define SOCKET_CONTROL "/tmp/z_control.sock"
 
+extern int clientes_activos;
+extern pthread_mutex_t clientes_mtx;
+
 // Estructura maestra que representa a un cliente en zaramagad
 typedef struct {
     int id;                  // ID único del cliente (0-3)

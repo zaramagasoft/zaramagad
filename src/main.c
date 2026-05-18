@@ -57,10 +57,12 @@ int main() {
         pthread_t thread_master;
         pthread_create(&thread_master, NULL, start_client_handler, (void*)nuevo_cliente);
         pthread_detach(thread_master); // Nos olvidamos de él, se gestiona solo
-
-        clientes[client_id_counter] = nuevo_cliente;
-        client_id_counter++;
-        printf("[Main] Clientes conectados %d \n", client_id_counter);
+        pthread_mutex_lock(&clientes_mtx);
+        clientes_activos++;
+        pthread_mutex_unlock(&clientes_mtx);
+        // clientes[client_id_counter] = nuevo_cliente;
+        // client_id_counter++;
+        printf("[Main] Clientes conectados %d \n", clientes_activos);
 
     }
 
